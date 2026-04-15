@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+    :root {
+        --background: 240 10% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 6%;
+        --card-foreground: 0 0% 98%;
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --primary: 160 84% 39%;
+        --primary-foreground: 355.7 100% 97.3%;
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        --accent: 38 92% 50%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 72% 51%;
+        --destructive-foreground: 0 0% 98%;
+        --ring: 160 84% 39%;
+        --radius: 0.5rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-zinc-800;
+    }
+
+    body {
+        @apply bg-zinc-950 text-zinc-100;
+        font-family: 'Geist', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    .font-mono {
+        font-family: 'IBM Plex Mono', monospace;
+    }
+}
+
+@layer components {
+    .sidebar-link {
+        @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-all duration-150 text-sm font-medium;
+    }
+
+    .sidebar-link.active {
+        @apply bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15 hover:text-emerald-300;
+    }
+
+    .kpi-card {
+        @apply bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-3;
+    }
+
+    .badge {
+        @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium;
+    }
+
+    .badge-pending {
+        @apply bg-amber-500/15 text-amber-400 border border-amber-500/20;
+    }
+
+    .badge-done {
+        @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/20;
+    }
+
+    .badge-overdue {
+        @apply bg-red-500/15 text-red-400 border border-red-500/20;
+    }
+
+    .badge-low {
+        @apply bg-zinc-700/60 text-zinc-300 border border-zinc-600/40;
+    }
+
+    .badge-medium {
+        @apply bg-blue-500/15 text-blue-400 border border-blue-500/20;
+    }
+
+    .badge-high {
+        @apply bg-orange-500/15 text-orange-400 border border-orange-500/20;
+    }
+
+    .badge-critical {
+        @apply bg-red-500/15 text-red-400 border border-red-500/20;
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-sm rounded-lg transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-medium text-sm rounded-lg border border-zinc-700 transition-all duration-150 active:scale-95;
+    }
+
+    .input-field {
+        @apply w-full bg-zinc-900 border border-zinc-700 text-zinc-100 placeholder-zinc-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-150;
+    }
+
+    .table-header {
+        @apply text-xs font-semibold text-zinc-500 uppercase tracking-wider px-4 py-3 text-left;
+    }
+
+    .table-cell {
+        @apply px-4 py-3 text-sm text-zinc-300;
+    }
+
+    .progress-bar-track {
+        @apply w-full bg-zinc-800 rounded-full overflow-hidden;
+    }
+
+    .progress-bar-fill {
+        @apply h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-700 ease-out;
+    }
+
+    .calendar-day {
+        @apply relative min-h-[80px] p-1.5 border border-zinc-800/60 hover:border-zinc-700 hover:bg-zinc-800/30 cursor-pointer transition-all duration-100 rounded-lg;
+    }
+
+    .calendar-day.today {
+        @apply border-emerald-500/40 bg-emerald-500/5;
+    }
+
+    .calendar-day.selected {
+        @apply border-emerald-400/60 bg-emerald-500/10;
+    }
+
+    .calendar-day.other-month {
+        @apply opacity-40;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse-highlight {
+
+    0%,
+    100% {
+        background-color: transparent;
+    }
+
+    50% {
+        background-color: rgba(110, 231, 183, 0.08);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slideUp {
+    animation: slideUp 0.25s ease-out;
+}
+
+.animate-pulse-highlight {
+    animation: pulse-highlight 1s ease-in-out;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 2px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #52525b;
+}
