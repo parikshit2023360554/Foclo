@@ -3,12 +3,10 @@ import React, { useState } from 'react';
 import { RefreshCw, Plus, Calendar, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import QuickAddModal from '@/components/QuickAddModal';
 
 export default function DashboardHeader() {
-    const { user } = useAuth();
-    const supabase = createClient();
+    const { user, supabase } = useAuth();
     const [syncing, setSyncing] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 

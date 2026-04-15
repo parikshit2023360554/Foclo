@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Plus, Search, Loader2, Calendar, MapPin, CheckCircle2, MoreHorizontal } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import QuickAddModal from '@/components/QuickAddModal';
@@ -27,8 +26,7 @@ const getPriorityColor = (priority: Priority) => {
 };
 
 export default function UpcomingExamsTable() {
-    const { user } = useAuth();
-    const supabase = createClient();
+    const { user, supabase } = useAuth();
     
     const [exams, setExams] = useState<Exam[]>([]);
     const [loading, setLoading] = useState(true);
@@ -43,50 +41,54 @@ export default function UpcomingExamsTable() {
 
         const fetchExams = async () => {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('exams')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('exam_date', { ascending: true });
+            try {
+                const { data, error } = await supabase
+                    .from('exams')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('exam_date', { ascending: true });
 
-            if (error) {
+                if (error) throw error;
+                if (data) {
+                    const formattedExams: Exam[] = data.map((d: any) => {
+                        let daysLeft = 0;
+                        if (d.exam_date) {
+                            const examDateObj = new Date(d.exam_date);
+                            examDateObj.setHours(0,0,0,0);
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            
+                            const diffTime = examDateObj.getTime() - today.getTime();
+                            daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        }
+                        
+                        let dateFormatted = 'No date';
+                        if (d.exam_date) {
+                            dateFormatted = new Date(d.exam_date).toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric'
+                            });
+                        }
+
+                        return {
+                            id: d.id,
+                            subject: d.subject,
+                            type: d.type || 'Exam',
+                            examDate: dateFormatted,
+                            daysLeft: daysLeft,
+                            priority: d.priority as Priority || 'medium',
+                            location: d.location
+                        };
+                    });
+                    
+                    // Filter out past exams
+                    setExams(formattedExams.filter(e => e.daysLeft >= 0));
+                }
+            } catch (error) {
                 toast.error('Failed to load exams');
                 console.error(error);
-            } else if (data) {
-                const formattedExams: Exam[] = data.map((d: any) => {
-                    let daysLeft = 0;
-                    if (d.exam_date) {
-                        const examDateObj = new Date(d.exam_date);
-                        examDateObj.setHours(0,0,0,0);
-                        const today = new Date();
-                        today.setHours(0,0,0,0);
-                        
-                        const diffTime = examDateObj.getTime() - today.getTime();
-                        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    }
-                    
-                    let dateFormatted = 'No date';
-                    if (d.exam_date) {
-                        dateFormatted = new Date(d.exam_date).toLocaleDateString('en-US', {
-                            month: 'short', day: 'numeric', year: 'numeric'
-                        });
-                    }
-
-                    return {
-                        id: d.id,
-                        subject: d.subject,
-                        type: d.type || 'Exam',
-                        examDate: dateFormatted,
-                        daysLeft: daysLeft,
-                        priority: d.priority as Priority || 'medium',
-                        location: d.location
-                    };
-                });
-                
-                // Filter out past exams
-                setExams(formattedExams.filter(e => e.daysLeft >= 0));
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchExams();
     }, [user, supabase]);

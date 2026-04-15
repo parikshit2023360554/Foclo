@@ -1,7 +1,6 @@
-
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const AuthContext = createContext<any>({});
@@ -41,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     // Email/Password Sign Up
-    const signUp = async (email: string, password: string, metadata = {}) => {
+    const signUp = async (email: string, password: string, metadata: { fullName?: string, avatarUrl?: string } = {}) => {
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -73,6 +72,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (error) throw error;
     };
 
+    // Resend confirmation email
+    const resendConfirmationEmail = async (email: string) => {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`
+            }
+        });
+        if (error) throw error;
+    };
+
     // Get Current User
     const getCurrentUser = async () => {
         const { data: { user }, error } = await supabase.auth.getUser();
@@ -97,17 +108,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return data;
     };
 
-    const value = {
+    const value = useMemo(() => ({
+        supabase,
         user,
         session,
         loading,
         signUp,
         signIn,
         signOut,
+        resendConfirmationEmail,
         getCurrentUser,
         isEmailVerified,
         getUserProfile
-    };
+    }), [supabase, user, session, loading]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

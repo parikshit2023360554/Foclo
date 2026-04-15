@@ -16,7 +16,6 @@ import {
     Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 type Priority = 'low' | 'medium' | 'high' | 'critical';
@@ -52,8 +51,7 @@ type SortField = 'title' | 'status' | 'priority' | 'dueDate' | 'estimatedHours';
 const ITEMS_PER_PAGE_OPTIONS = [5, 10, 20];
 
 export default function PendingBacklogTable() {
-    const { user } = useAuth();
-    const supabase = createClient();
+    const { user, supabase } = useAuth();
 
     const [tasks, setTasks] = useState<BacklogTask[]>([]);
     const [loading, setLoading] = useState(true);
@@ -74,51 +72,55 @@ export default function PendingBacklogTable() {
 
         const fetchTasks = async () => {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('tasks')
-                .select('*')
-                .eq('user_id', user.id)
-                // Optionally exclude 'done' items from backlog or fetch everything
-                .neq('status', 'done')
-                .order('due_date', { ascending: true, nullsFirst: false });
+            try {
+                const { data, error } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    // Optionally exclude 'done' items from backlog or fetch everything
+                    .neq('status', 'done')
+                    .order('due_date', { ascending: true, nullsFirst: false });
 
-            if (error) {
+                if (error) throw error;
+                if (data) {
+                    const formatted: BacklogTask[] = data.map((d: any) => {
+                        let daysOverdue = 0;
+                        let dueDateFormatted = 'No date';
+                        
+                        if (d.due_date) {
+                            const dd = new Date(d.due_date);
+                            dueDateFormatted = dd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            const dDay = new Date(d.due_date);
+                            dDay.setHours(0,0,0,0);
+                            
+                            if (dDay < today && d.status !== 'done') {
+                                const diffTime = today.getTime() - dDay.getTime();
+                                daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            }
+                        }
+
+                        return {
+                            id: d.id,
+                            title: d.title,
+                            status: d.status as TaskStatus,
+                            priority: d.priority as Priority,
+                            dueDate: dueDateFormatted,
+                            daysOverdue: daysOverdue > 0 ? daysOverdue : undefined,
+                            category: d.category || 'General',
+                            estimatedHours: d.estimated_hours || 0,
+                        };
+                    });
+                    setTasks(formatted);
+                }
+            } catch (error) {
                 toast.error('Failed to load backlog tasks');
                 console.error(error);
-            } else if (data) {
-                const formatted: BacklogTask[] = data.map((d: any) => {
-                    let daysOverdue = 0;
-                    let dueDateFormatted = 'No date';
-                    
-                    if (d.due_date) {
-                        const dd = new Date(d.due_date);
-                        dueDateFormatted = dd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                        
-                        const today = new Date();
-                        today.setHours(0,0,0,0);
-                        const dDay = new Date(d.due_date);
-                        dDay.setHours(0,0,0,0);
-                        
-                        if (dDay < today && d.status !== 'done') {
-                            const diff = today.getTime() - dDay.getTime();
-                            daysOverdue = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                        }
-                    }
-
-                    return {
-                        id: d.id,
-                        title: d.title,
-                        status: d.status as TaskStatus,
-                        priority: d.priority as Priority,
-                        dueDate: dueDateFormatted,
-                        daysOverdue: daysOverdue > 0 ? daysOverdue : undefined,
-                        category: d.category || 'Uncategorized',
-                        estimatedHours: d.estimated_hours || 0,
-                    };
-                });
-                setTasks(formatted);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchTasks();
     }, [user, supabase]);

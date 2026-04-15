@@ -1,64 +1,15 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     CheckCircle2,
     AlertTriangle,
     BookOpen,
     TrendingUp,
     Clock,
+    Loader2,
 } from 'lucide-react';
-
-// Grid plan: 5 cards → grid-cols-5 single row on xl
-// row 1: hero (Tasks Due Today spans 1, but styled larger) + 4 regular
-// On smaller screens: 2-col then 1-col
-
-const kpiData = [
-    {
-        id: 'kpi-due-today',
-        label: 'Tasks Due Today',
-        value: '7',
-        sub: '3 completed · 4 remaining',
-        icon: <CheckCircle2 size={18} />,
-        trend: null,
-        variant: 'primary',
-    },
-    {
-        id: 'kpi-overdue',
-        label: 'Overdue Tasks',
-        value: '3',
-        sub: 'Needs immediate attention',
-        icon: <AlertTriangle size={18} />,
-        trend: null,
-        variant: 'danger',
-    },
-    {
-        id: 'kpi-exams',
-        label: 'Exams This Week',
-        value: '2',
-        sub: 'Next: Algorithms · Apr 16',
-        icon: <BookOpen size={18} />,
-        trend: null,
-        variant: 'warning',
-    },
-    {
-        id: 'kpi-completion',
-        label: 'Today\'s Completion',
-        value: '43%',
-        sub: '3 of 7 tasks done',
-        icon: <TrendingUp size={18} />,
-        trend: 'up',
-        variant: 'neutral',
-    },
-    {
-        id: 'kpi-backlog',
-        label: 'Pending Backlog',
-        value: '18',
-        sub: '5 high priority items',
-        icon: <Clock size={18} />,
-        trend: null,
-        variant: 'neutral',
-    },
-];
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const variantStyles: Record<string, { card: string; icon: string; value: string }> = {
     primary: {
@@ -84,6 +35,140 @@ const variantStyles: Record<string, { card: string; icon: string; value: string 
 };
 
 export default function KpiBentoGrid() {
+    const { user, supabase } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        dueToday: { total: 0, completed: 0 },
+        overdue: 0,
+        examsThisWeek: { count: 0, next: '' },
+        completion: 0,
+        backlog: { total: 0, highPriority: 0 }
+    });
+
+    useEffect(() => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
+        const fetchStats = async () => {
+            setLoading(true);
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tonight = new Date(today);
+                tonight.setHours(23, 59, 59, 999);
+
+                const nextWeek = new Date(today);
+                nextWeek.setDate(today.getDate() + 7);
+
+                // Fetch all tasks for the user
+                const { data: tasks, error: tasksError } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('user_id', user.id);
+
+                if (tasksError) throw tasksError;
+
+                // Fetch all exams for the user
+                const { data: exams, error: examsError } = await supabase
+                    .from('exams')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .gte('exam_date', today.toISOString())
+                    .lte('exam_date', nextWeek.toISOString())
+                    .order('exam_date', { ascending: true });
+
+                if (examsError) throw examsError;
+
+                // Calculations
+                const dueTodayTasks = tasks?.filter((t: any) => {
+                    if (!t.due_date) return false;
+                    const d = new Date(t.due_date);
+                    return d >= today && d <= tonight;
+                }) || [];
+
+                const completedToday = dueTodayTasks.filter((t: any) => t.status === 'done').length;
+
+                const overdueTasks = tasks?.filter((t: any) => {
+                    if (!t.due_date || t.status === 'done') return false;
+                    const d = new Date(t.due_date);
+                    return d < today;
+                }).length || 0;
+
+                const backlogTasks = tasks?.filter((t: any) => t.status !== 'done') || [];
+                const highPriorityBacklog = backlogTasks.filter((t: any) => t.priority === 'high' || t.priority === 'critical').length;
+
+                const nextExam = exams && exams.length > 0 
+                    ? `${exams[0].subject} · ${new Date(exams[0].exam_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : 'No exams soon';
+
+                const completionPct = dueTodayTasks.length > 0 
+                    ? Math.round((completedToday / dueTodayTasks.length) * 100)
+                    : 0;
+
+                setStats({
+                    dueToday: { total: dueTodayTasks.length, completed: completedToday },
+                    overdue: overdueTasks,
+                    examsThisWeek: { count: exams?.length || 0, next: nextExam },
+                    completion: completionPct,
+                    backlog: { total: backlogTasks.length, highPriority: highPriorityBacklog }
+                });
+
+            } catch (error) {
+                console.error('Stats fetch error:', error);
+                toast.error('Failed to load dashboard stats');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, [user, supabase]);
+
+    const kpiData = [
+        {
+            id: 'kpi-due-today',
+            label: 'Tasks Due Today',
+            value: loading ? '...' : String(stats.dueToday.total),
+            sub: loading ? 'Loading...' : `${stats.dueToday.completed} completed · ${stats.dueToday.total - stats.dueToday.completed} remaining`,
+            icon: <CheckCircle2 size={18} />,
+            variant: 'primary',
+        },
+        {
+            id: 'kpi-overdue',
+            label: 'Overdue Tasks',
+            value: loading ? '...' : String(stats.overdue),
+            sub: stats.overdue > 0 ? 'Needs immediate attention' : 'All caught up!',
+            icon: <AlertTriangle size={18} />,
+            variant: 'danger',
+        },
+        {
+            id: 'kpi-exams',
+            label: 'Exams This Week',
+            value: loading ? '...' : String(stats.examsThisWeek.count),
+            sub: loading ? 'Loading...' : `Next: ${stats.examsThisWeek.next}`,
+            icon: <BookOpen size={18} />,
+            variant: 'warning',
+        },
+        {
+            id: 'kpi-completion',
+            label: "Today's Completion",
+            value: loading ? '...' : `${stats.completion}%`,
+            sub: loading ? 'Loading...' : `${stats.dueToday.completed} of ${stats.dueToday.total} tasks done`,
+            icon: <TrendingUp size={18} />,
+            variant: 'neutral',
+        },
+        {
+            id: 'kpi-backlog',
+            label: 'Pending Backlog',
+            value: loading ? '...' : String(stats.backlog.total),
+            sub: loading ? 'Loading...' : `${stats.backlog.highPriority} high priority items`,
+            icon: <Clock size={18} />,
+            variant: 'neutral',
+        },
+    ];
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
             {kpiData.map((kpi) => {
@@ -91,8 +176,13 @@ export default function KpiBentoGrid() {
                 return (
                     <div
                         key={kpi.id}
-                        className={`kpi-card border ${styles.card} animate-fadeIn`}
+                        className={`kpi-card border ${styles.card} animate-fadeIn relative overflow-hidden`}
                     >
+                        {loading && (
+                            <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                                <Loader2 size={14} className="animate-spin text-zinc-600" />
+                            </div>
+                        )}
                         <div className="flex items-start justify-between">
                             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                                 {kpi.label}

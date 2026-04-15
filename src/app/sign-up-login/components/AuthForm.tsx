@@ -15,7 +15,7 @@ import {
     Loader2,
     ArrowRight,
 } from 'lucide-react';
-import AppLogo from '@/components/ui/AppLogo';
+import AppLogo from '@/components/ui/applogo';
 import { useAuth } from '@/context/AuthContext';
 
 interface LoginFields {
@@ -69,7 +69,8 @@ export default function AuthForm() {
     const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
-    const { signIn, signUp } = useAuth();
+    const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+    const { signIn, signUp, resendConfirmationEmail } = useAuth();
 
     const loginForm = useForm<LoginFields>({ defaultValues: { email: '', password: '', remember: false } });
     const signupForm = useForm<SignUpFields>({ defaultValues: { name: '', email: '', password: '', confirmPassword: '', terms: false } });
@@ -81,12 +82,44 @@ export default function AuthForm() {
 
     const onLogin = async (data: LoginFields) => {
         setLoading(true);
+        setUnconfirmedEmail(null);
         try {
-            await signIn(data.email, data.password);
+            const { data: authData, error } = await signIn(data.email, data.password);
+            if (error) throw error;
+            
             toast.success('Signed in successfully', { description: 'Welcome back!' });
             router.push('/dashboard');
         } catch (error: any) {
-            loginForm.setError('email', { message: error.message || 'Invalid credentials' });
+            console.error('Login error:', error);
+            const msg = error.message?.toLowerCase() || '';
+            
+            if (msg.includes('email not confirmed')) {
+                setUnconfirmedEmail(data.email);
+                toast.error('Email not confirmed', {
+                    description: 'Please check your inbox or resend the confirmation link below.',
+                });
+            } else if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
+                loginForm.setError('email', { message: 'Incorrect email or password' });
+                loginForm.setError('password', { message: 'Incorrect email or password' });
+                toast.error('Login failed', { description: 'Incorrect email or password' });
+            } else {
+                loginForm.setError('email', { message: error.message || 'An error occurred during sign in' });
+                toast.error('Login error', { description: error.message });
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onResendEmail = async () => {
+        if (!unconfirmedEmail) return;
+        setLoading(true);
+        try {
+            await resendConfirmationEmail(unconfirmedEmail);
+            toast.success('Confirmation email sent', { description: 'Please check your inbox.' });
+            setUnconfirmedEmail(null);
+        } catch (error: any) {
+            toast.error('Failed to resend email', { description: error.message });
         } finally {
             setLoading(false);
         }
@@ -94,17 +127,32 @@ export default function AuthForm() {
 
     const onSignUp = async (data: SignUpFields) => {
         setLoading(true);
+        setUnconfirmedEmail(null);
         if (data.password !== data.confirmPassword) {
             signupForm.setError('confirmPassword', { message: 'Passwords do not match' });
             setLoading(false);
             return;
         }
         try {
-            await signUp(data.email, data.password, { fullName: data.name });
-            toast.success('Account created!', { description: 'You can now sign in.' });
+            const { data: authData, error } = await signUp(data.email, data.password, { fullName: data.name });
+            if (error) throw error;
+            
+            toast.success('Account created!', {
+                description: 'Please check your email to confirm your account.',
+            });
+            setUnconfirmedEmail(data.email);
             setTab('login');
         } catch (error: any) {
-            toast.error('Signup failed', { description: error.message });
+            console.error('Signup error:', error);
+            const msg = error.message?.toLowerCase() || '';
+            
+            if (msg.includes('user already registered') || msg.includes('user already exists')) {
+                signupForm.setError('email', { message: 'An account with this email already exists' });
+                toast.error('Signup failed', { description: 'An account with this email already exists' });
+            } else {
+                signupForm.setError('email', { message: error.message || 'Error creating account' });
+                toast.error('Signup error', { description: error.message });
+            }
         } finally {
             setLoading(false);
         }
@@ -272,6 +320,22 @@ export default function AuthForm() {
                                     <p className="text-xs text-red-400 mt-1.5">{loginForm.formState.errors.password.message}</p>
                                 )}
                             </div>
+
+                            {unconfirmedEmail && (
+                                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <p className="text-xs text-amber-200 mb-2 font-medium">
+                                        Your email is not confirmed. Please check your inbox for the verification link.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={onResendEmail}
+                                        disabled={loading}
+                                        className="text-xs text-amber-400 font-semibold hover:text-amber-300 underline underline-offset-2 decoration-amber-500/30 hover:decoration-amber-400 transition-all disabled:opacity-50"
+                                    >
+                                        {loading ? 'Resending…' : 'Resend confirmation email'}
+                                    </button>
+                                </div>
+                            )}
 
                             <div className="flex items-center justify-between">
                                 <label className="flex items-center gap-2 cursor-pointer">

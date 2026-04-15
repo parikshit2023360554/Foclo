@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, CheckCircle2, Circle, Trash2, GripVertical, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import QuickAddModal from '@/components/QuickAddModal';
 
@@ -25,8 +24,7 @@ const priorityBadge: Record<Priority, string> = {
 };
 
 export default function DailyTasksSection() {
-    const { user } = useAuth();
-    const supabase = createClient();
+    const { user, supabase } = useAuth();
     const [tasks, setTasks] = useState<DailyTask[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -38,19 +36,21 @@ export default function DailyTasksSection() {
         }
         const fetchTasks = async () => {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('tasks')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-            
-            if (error) {
+            try {
+                const { data, error } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                if (data) setTasks(data);
+            } catch (error) {
                 toast.error('Failed to load tasks');
                 console.error(error);
-            } else if (data) {
-                setTasks(data);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchTasks();
     }, [user, supabase]);

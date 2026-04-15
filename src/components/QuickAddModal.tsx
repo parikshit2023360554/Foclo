@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface QuickAddModalProps {
     isOpen: boolean;
@@ -12,8 +12,8 @@ interface QuickAddModalProps {
 }
 
 export default function QuickAddModal({ isOpen, onClose, defaultType = 'Task' }: QuickAddModalProps) {
-    const { user } = useAuth();
-    const supabase = createClient();
+    const { user, supabase } = useAuth();
+    const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
     
     const [type, setType] = useState<'Task' | 'Exam'>(defaultType);
@@ -66,7 +66,8 @@ export default function QuickAddModal({ isOpen, onClose, defaultType = 'Task' }:
             // Wait briefly to allow states to sync before closing
             setTimeout(() => {
                 onClose();
-                window.location.reload(); // Quick refresh to update the dashboard tables natively
+                // Use router.push or router.refresh if possible, but reload is safest for client-side components to re-fetch
+                window.location.href = '/dashboard'; 
             }, 300);
             
         } catch (error: any) {
