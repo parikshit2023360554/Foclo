@@ -66,8 +66,7 @@ export default function QuickAddModal({ isOpen, onClose, defaultType = 'Task' }:
             // Wait briefly to allow states to sync before closing
             setTimeout(() => {
                 onClose();
-                // Use router.push or router.refresh if possible, but reload is safest for client-side components to re-fetch
-                window.location.href = '/dashboard'; 
+                window.location.reload(); 
             }, 300);
             
         } catch (error: any) {

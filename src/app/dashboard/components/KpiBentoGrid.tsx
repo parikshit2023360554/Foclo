@@ -82,11 +82,7 @@ export default function KpiBentoGrid() {
                 if (examsError) throw examsError;
 
                 // Calculations
-                const dueTodayTasks = tasks?.filter((t: any) => {
-                    if (!t.due_date) return false;
-                    const d = new Date(t.due_date);
-                    return d >= today && d <= tonight;
-                }) || [];
+                const dueTodayTasks = tasks || [];
 
                 const completedToday = dueTodayTasks.filter((t: any) => t.status === 'done').length;
 

@@ -63,6 +63,7 @@ export default function PendingBacklogTable() {
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [showFiltersDropdown, setShowFiltersDropdown] = useState(false);
 
     useEffect(() => {
         if (!user) {
@@ -86,16 +87,16 @@ export default function PendingBacklogTable() {
                     const formatted: BacklogTask[] = data.map((d: any) => {
                         let daysOverdue = 0;
                         let dueDateFormatted = 'No date';
-                        
+
                         if (d.due_date) {
                             const dd = new Date(d.due_date);
                             dueDateFormatted = dd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                            
+
                             const today = new Date();
-                            today.setHours(0,0,0,0);
+                            today.setHours(0, 0, 0, 0);
                             const dDay = new Date(d.due_date);
-                            dDay.setHours(0,0,0,0);
-                            
+                            dDay.setHours(0, 0, 0, 0);
+
                             if (dDay < today && d.status !== 'done') {
                                 const diffTime = today.getTime() - dDay.getTime();
                                 daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -204,7 +205,7 @@ export default function PendingBacklogTable() {
             .delete()
             .eq('id', id)
             .eq('user_id', user?.id);
-            
+
         if (error) {
             toast.error('Failed to delete task');
         } else {
@@ -232,14 +233,62 @@ export default function PendingBacklogTable() {
                     <span className="badge badge-pending ml-1">{filtered.length}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button className="btn-secondary text-xs py-1.5 px-3 gap-1.5">
+                    {/* Desktop Columns Button */}
+                    <button className="hidden md:flex btn-secondary text-xs py-1.5 px-3 gap-1.5">
                         <SlidersHorizontal size={13} />
                         Columns
                     </button>
+                    {/* Mobile Filters Dropdown */}
+                    <div className="relative md:hidden">
+                        <button 
+                            onClick={() => setShowFiltersDropdown(!showFiltersDropdown)}
+                            className="btn-secondary text-xs py-1.5 px-3 gap-1.5 relative"
+                        >
+                            <SlidersHorizontal size={13} />
+                            Filters
+                            {(filterStatus !== 'all' || filterPriority !== 'all') && (
+                                <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-zinc-900" />
+                            )}
+                        </button>
+                        {showFiltersDropdown && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowFiltersDropdown(false)} />
+                                <div className="absolute right-0 mt-2 w-52 bg-zinc-800 border border-zinc-700/80 p-3 rounded-xl shadow-xl z-50 flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">Status</label>
+                                        <select 
+                                            value={filterStatus} 
+                                            onChange={(e) => {setFilterStatus(e.target.value as TaskStatus | 'all'); setPage(1);}}
+                                            className="bg-zinc-900 border border-zinc-700 text-xs text-zinc-200 rounded-lg p-2 focus:border-emerald-500 outline-none"
+                                        >
+                                            <option value="all">All Statuses</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="in-progress">In Progress</option>
+                                            <option value="overdue">Overdue</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">Priority</label>
+                                        <select 
+                                            value={filterPriority} 
+                                            onChange={(e) => {setFilterPriority(e.target.value as Priority | 'all'); setPage(1);}}
+                                            className="bg-zinc-900 border border-zinc-700 text-xs text-zinc-200 rounded-lg p-2 focus:border-emerald-500 outline-none"
+                                        >
+                                            <option value="all">All Priorities</option>
+                                            <option value="critical">Critical</option>
+                                            <option value="high">High</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="low">Low</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {/* Filters */}
+            {/* Search and Filters */}
             <div className="px-5 pb-3 flex flex-wrap items-center gap-2.5">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
@@ -248,18 +297,19 @@ export default function PendingBacklogTable() {
                         placeholder="Search tasks or category…"
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                        className="input-field pl-8 text-xs py-1.5"
+                        className="input-field pl-8 text-xs py-1.5 w-full"
                     />
                 </div>
 
-                <div className="flex items-center gap-1">
+                {/* Desktop Inline Filters */}
+                <div className="hidden md:flex items-center gap-1">
                     <span className="text-xs text-zinc-600 mr-1">Status:</span>
                     {(['all', 'pending', 'in-progress', 'overdue'] as const).map((s) => (
                         <button
                             key={`status-filter-${s}`}
                             onClick={() => { setFilterStatus(s); setPage(1); }}
                             className={`text-xs px-2.5 py-1 rounded-md border transition-all duration-100 font-medium ${filterStatus === s
-                                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:text-zinc-300'
+                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:text-zinc-300'
                                 }`}
                         >
                             {s === 'all' ? 'All' : s === 'in-progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -267,14 +317,14 @@ export default function PendingBacklogTable() {
                     ))}
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="hidden md:flex items-center gap-1">
                     <span className="text-xs text-zinc-600 mr-1">Priority:</span>
                     {(['all', 'critical', 'high', 'medium', 'low'] as const).map((p) => (
                         <button
                             key={`priority-filter-${p}`}
                             onClick={() => { setFilterPriority(p); setPage(1); }}
                             className={`text-xs px-2.5 py-1 rounded-md border transition-all duration-100 font-medium ${filterPriority === p
-                                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:text-zinc-300'
+                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-zinc-800 text-zinc-500 border-zinc-700 hover:text-zinc-300'
                                 }`}
                         >
                             {p === 'all' ? 'All' : p.charAt(0).toUpperCase() + p.slice(1)}
@@ -421,7 +471,7 @@ export default function PendingBacklogTable() {
                     </tbody>
                 </table>
             </div>
-            
+
             {/* Pagination */}
             {filtered.length > 0 && (
                 <div className="flex items-center justify-between px-5 py-3.5 border-t border-zinc-800">
@@ -453,7 +503,7 @@ export default function PendingBacklogTable() {
                                 key={`page-${p}`}
                                 onClick={() => setPage(p)}
                                 className={`w-7 h-7 flex items-center justify-center rounded-md text-xs font-medium transition-all duration-100 ${p === page
-                                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800'
+                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800'
                                     }`}
                             >
                                 {p}
