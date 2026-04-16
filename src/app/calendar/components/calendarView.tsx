@@ -128,10 +128,7 @@ export default function CalendarView() {
 
     const today = new Date();
 
-    const daysInMonth = getDaysInMonth(viewYear, viewMonth);
-    const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
-    const prevMonthDays = getDaysInMonth(viewYear, viewMonth - 1 < 0 ? 11 : viewMonth - 1);
-
+    
     const prevMonth = () => {
         if (viewMonth === 0) { setViewYear(viewYear - 1); setViewMonth(11); }
         else setViewMonth(viewMonth - 1);
@@ -153,24 +150,98 @@ export default function CalendarView() {
 
     const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
 
-    // Build calendar cells
-    const cells: { day: number; month: 'prev' | 'current' | 'next'; dateKey: string }[] = [];
+    const generateCells = (y: number, m: number) => {
+        const cells: { day: number; month: 'prev' | 'current' | 'next'; dateKey: string }[] = [];
+        const daysInMonth = getDaysInMonth(y, m);
+        const firstDay = getFirstDayOfMonth(y, m);
+        const prevMonthDays = getDaysInMonth(y, m - 1 < 0 ? 11 : m - 1);
+        
+        for (let i = 0; i < firstDay; i++) {
+            let d = prevMonthDays - firstDay + i + 1;
+            const prevM = m - 1 < 0 ? 11 : m - 1;
+            const prevY = m - 1 < 0 ? y - 1 : y;
+            cells.push({ day: d, month: 'prev', dateKey: toDateKey(prevY, prevM, d) });
+        }
+        for (let d = 1; d <= daysInMonth; d++) {
+            cells.push({ day: d, month: 'current', dateKey: toDateKey(y, m, d) });
+        }
+        const remaining = 42 - cells.length;
+        for (let d = 1; d <= remaining; d++) {
+            const nextM = m + 1 > 11 ? 0 : m + 1;
+            const nextY = m + 1 > 11 ? y + 1 : y;
+            cells.push({ day: d, month: 'next', dateKey: toDateKey(nextY, nextM, d) });
+        }
+        return cells;
+    };
 
-    for (let i = 0; i < firstDay; i++) {
-        let d = prevMonthDays - firstDay + i + 1;
-        const m = viewMonth - 1 < 0 ? 11 : viewMonth - 1;
-        const y = viewMonth - 1 < 0 ? viewYear - 1 : viewYear;
-        cells.push({ day: d, month: 'prev', dateKey: toDateKey(y, m, d) });
-    }
-    for (let d = 1; d <= daysInMonth; d++) {
-        cells.push({ day: d, month: 'current', dateKey: toDateKey(viewYear, viewMonth, d) });
-    }
-    const remaining = 42 - cells.length;
-    for (let d = 1; d <= remaining; d++) {
-        const m = viewMonth + 1 > 11 ? 0 : viewMonth + 1;
-        const y = viewMonth + 1 > 11 ? viewYear + 1 : viewYear;
-        cells.push({ day: d, month: 'next', dateKey: toDateKey(y, m, d) });
-    }
+    const renderMonthGrid = (y: number, m: number) => {
+        const cells = generateCells(y, m);
+        return (
+            <div key={`${y}-${m}`} className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl md:overflow-hidden shrink-0">
+                <div className="bg-zinc-800/20 px-4 py-2 border-b border-zinc-800 flex justify-between items-center md:hidden rounded-t-xl">
+                    <span className="font-semibold text-zinc-300 text-sm">{MONTHS[m]} {y}</span>
+                </div>
+                <div className="grid grid-cols-7 border-b border-zinc-800 rounded-t-xl md:rounded-none bg-zinc-900">
+                    {DAYS.map((d) => (
+                        <div key={`day-header-${y}-${m}-${d}`} className="px-2 py-2.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center">
+                            {d}
+                        </div>
+                    ))}
+                </div>
+                <div className="grid grid-cols-7 bg-zinc-900 rounded-b-xl">
+                    {cells.map((cell, idx) => {
+                        const isToday = cell.dateKey === todayKey;
+                        const isSelected = cell.dateKey === selectedDate;
+                        const isOtherMonth = cell.month !== 'current';
+                        const dayEvents = eventsByDate[cell.dateKey] || [];
+                        const taskEvents = dayEvents.filter((e) => e.type === 'task');
+                        const examEvents = dayEvents.filter((e) => e.type === 'exam');
+
+                        return (
+                            <div
+                                key={`cell-${cell.dateKey}-${idx}`}
+                                onClick={() => setSelectedDate(cell.dateKey)}
+                                className={`calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${isOtherMonth ? 'other-month' : ''}`}
+                            >
+                                <div className={`text-xs font-semibold mb-1 w-5 h-5 flex items-center justify-center rounded-full ${isToday
+                                    ? 'bg-emerald-500 text-zinc-950'
+                                    : isSelected
+                                        ? 'text-emerald-400' : 'text-zinc-400'
+                                    }`}>
+                                    {cell.day}
+                                </div>
+                                <div className="space-y-0.5">
+                                    {taskEvents.slice(0, 2).map((ev) => (
+                                        <div
+                                            key={`chip-${ev.id}`}
+                                            className="flex items-center gap-1 px-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/20 truncate"
+                                        >
+                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityDot[ev.priority]}`} />
+                                            <span className="text-[10px] text-emerald-300 truncate leading-none">{ev.title}</span>
+                                        </div>
+                                    ))}
+                                    {examEvents.slice(0, 1).map((ev) => (
+                                        <div
+                                            key={`chip-${ev.id}`}
+                                            className="flex items-center gap-1 px-1 py-0.5 rounded bg-amber-500/15 border border-amber-500/20 truncate"
+                                        >
+                                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityDot[ev.priority]}`} />
+                                            <span className="text-[10px] text-amber-300 truncate leading-none">{ev.title}</span>
+                                        </div>
+                                    ))}
+                                    {dayEvents.length > 3 && (
+                                        <div className="text-[10px] text-zinc-500 px-1">
+                                            +{dayEvents.length - 3} more
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
 
     const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -179,7 +250,7 @@ export default function CalendarView() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 8);
 
-    return (
+return (
         <div className="flex flex-col gap-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -227,71 +298,9 @@ export default function CalendarView() {
             </div>
 
             <div className="flex flex-col xl:flex-row gap-6">
-                {/* Calendar grid */}
-                <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                    {/* Day headers */}
-                    <div className="grid grid-cols-7 border-b border-zinc-800">
-                        {DAYS.map((d) => (
-                            <div key={`day-header-${d}`} className="px-2 py-2.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center">
-                                {d}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Grid */}
-                    <div className="grid grid-cols-7">
-                        {cells.map((cell, idx) => {
-                            const isToday = cell.dateKey === todayKey;
-                            const isSelected = cell.dateKey === selectedDate;
-                            const isOtherMonth = cell.month !== 'current';
-                            const dayEvents = eventsByDate[cell.dateKey] || [];
-                            const taskEvents = dayEvents.filter((e) => e.type === 'task');
-                            const examEvents = dayEvents.filter((e) => e.type === 'exam');
-
-                            return (
-                                <div
-                                    key={`cell-${cell.dateKey}-${idx}`}
-                                    onClick={() => setSelectedDate(cell.dateKey)}
-                                    className={`calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''} ${isOtherMonth ? 'other-month' : ''}`}
-                                >
-                                    <div className={`text-xs font-semibold mb-1 w-5 h-5 flex items-center justify-center rounded-full ${isToday
-                                        ? 'bg-emerald-500 text-zinc-950'
-                                        : isSelected
-                                            ? 'text-emerald-400' : 'text-zinc-400'
-                                        }`}>
-                                        {cell.day}
-                                    </div>
-
-                                    {/* Event chips */}
-                                    <div className="space-y-0.5">
-                                        {taskEvents.slice(0, 2).map((ev) => (
-                                            <div
-                                                key={`chip-${ev.id}`}
-                                                className="flex items-center gap-1 px-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/20 truncate"
-                                            >
-                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityDot[ev.priority]}`} />
-                                                <span className="text-[10px] text-emerald-300 truncate leading-none">{ev.title}</span>
-                                            </div>
-                                        ))}
-                                        {examEvents.slice(0, 1).map((ev) => (
-                                            <div
-                                                key={`chip-${ev.id}`}
-                                                className="flex items-center gap-1 px-1 py-0.5 rounded bg-amber-500/15 border border-amber-500/20 truncate"
-                                            >
-                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${priorityDot[ev.priority]}`} />
-                                                <span className="text-[10px] text-amber-300 truncate leading-none">{ev.title}</span>
-                                            </div>
-                                        ))}
-                                        {dayEvents.length > 3 && (
-                                            <div className="text-[10px] text-zinc-500 px-1">
-                                                +{dayEvents.length - 3} more
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                {/* Calendar grid wrapper */}
+                <div className="flex-1 overflow-hidden">
+                    {renderMonthGrid(viewYear, viewMonth)}
                 </div>
 
                 {/* Right panel: selected day + upcoming */}

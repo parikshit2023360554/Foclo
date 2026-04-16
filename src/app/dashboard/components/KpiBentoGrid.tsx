@@ -129,7 +129,7 @@ export default function KpiBentoGrid() {
     const kpiData = [
         {
             id: 'kpi-due-today',
-            label: 'Tasks Due Today',
+            label: 'Tasks',
             value: loading ? '...' : String(stats.dueToday.total),
             sub: loading ? 'Loading...' : `${stats.dueToday.completed} completed · ${stats.dueToday.total - stats.dueToday.completed} remaining`,
             icon: <CheckCircle2 size={18} />,
@@ -137,7 +137,7 @@ export default function KpiBentoGrid() {
         },
         {
             id: 'kpi-overdue',
-            label: 'Overdue Tasks',
+            label: 'Overdue',
             value: loading ? '...' : String(stats.overdue),
             sub: stats.overdue > 0 ? 'Needs immediate attention' : 'All caught up!',
             icon: <AlertTriangle size={18} />,
@@ -145,7 +145,7 @@ export default function KpiBentoGrid() {
         },
         {
             id: 'kpi-exams',
-            label: 'Exams This Week',
+            label: 'Exams',
             value: loading ? '...' : String(stats.examsThisWeek.count),
             sub: loading ? 'Loading...' : `Next: ${stats.examsThisWeek.next}`,
             icon: <BookOpen size={18} />,
@@ -153,7 +153,7 @@ export default function KpiBentoGrid() {
         },
         {
             id: 'kpi-completion',
-            label: "Today's Completion",
+            label: 'Completed',
             value: loading ? '...' : `${stats.completion}%`,
             sub: loading ? 'Loading...' : `${stats.dueToday.completed} of ${stats.dueToday.total} tasks done`,
             icon: <TrendingUp size={18} />,
@@ -161,7 +161,7 @@ export default function KpiBentoGrid() {
         },
         {
             id: 'kpi-backlog',
-            label: 'Pending Backlog',
+            label: 'Backlog',
             value: loading ? '...' : String(stats.backlog.total),
             sub: loading ? 'Loading...' : `${stats.backlog.highPriority} high priority items`,
             icon: <Clock size={18} />,
@@ -170,32 +170,32 @@ export default function KpiBentoGrid() {
     ];
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-5 gap-2 md:gap-4 overflow-hidden">
             {kpiData.map((kpi) => {
                 const styles = variantStyles[kpi.variant];
                 return (
                     <div
                         key={kpi.id}
-                        className={`kpi-card border ${styles.card} animate-fadeIn relative overflow-hidden`}
+                        className={`border ${styles.card} bg-zinc-900 rounded-xl p-2 md:p-5 flex flex-col items-center md:items-start justify-center md:justify-start gap-1 md:gap-3 animate-fadeIn relative overflow-hidden text-center md:text-left`}
                     >
                         {loading && (
-                            <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black/5 flex items-center justify-center z-10">
                                 <Loader2 size={14} className="animate-spin text-zinc-600" />
                             </div>
                         )}
-                        <div className="flex items-start justify-between">
-                            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                        <div className="flex items-start md:justify-between w-full">
+                            <p className="text-[10px] md:text-xs font-semibold text-zinc-500 uppercase tracking-tighter md:tracking-wider w-full md:w-auto text-center md:text-left truncate">
                                 {kpi.label}
                             </p>
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${styles.icon}`}>
+                            <div className={`hidden md:flex w-8 h-8 rounded-lg items-center justify-center ${styles.icon} shrink-0`}>
                                 {kpi.icon}
                             </div>
                         </div>
-                        <div>
-                            <p className={`text-3xl font-bold font-mono tabular-nums ${styles.value}`}>
+                        <div className="w-full">
+                            <p className={`text-xl md:text-3xl font-bold font-mono tabular-nums w-full text-center md:text-left ${styles.value}`}>
                                 {kpi.value}
                             </p>
-                            <p className="text-xs text-zinc-500 mt-1">{kpi.sub}</p>
+                            <p className="hidden md:block text-xs text-zinc-500 mt-1 truncate">{kpi.sub}</p>
                         </div>
                     </div>
                 );

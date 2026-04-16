@@ -54,7 +54,7 @@ export default function Sidebar({ currentPath }: SidebarProps) {
 
   return (
     <aside
-      className={`relative flex flex-col bg-zinc-900 border-r border-zinc-800 transition-all duration-300 ease-in-out shrink-0 ${collapsed ? 'w-16' : 'w-56'
+      className={`relative hidden md:flex flex-col bg-zinc-900 border-r border-zinc-800 transition-all duration-300 ease-in-out shrink-0 ${collapsed ? 'w-16' : 'w-56'
         }`}
     >
       {/* Logo */}

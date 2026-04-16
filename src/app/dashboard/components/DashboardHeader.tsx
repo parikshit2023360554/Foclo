@@ -77,7 +77,7 @@ export default function DashboardHeader() {
                     Reminders
                 </button>
                 <button 
-                  className="btn-primary text-xs gap-1.5"
+                  className="hidden md:flex btn-primary text-xs gap-1.5"
                   onClick={() => setIsAddModalOpen(true)}
                 >
                     <Plus size={14} />
@@ -85,6 +85,14 @@ export default function DashboardHeader() {
                 </button>
             </div>
             
+            {/* Mobile FAB */}
+            <button
+                className="md:hidden fixed bottom-20 right-4 w-12 h-12 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20 z-40 transition-transform active:scale-95"
+                onClick={() => setIsAddModalOpen(true)}
+            >
+                <Plus size={24} />
+            </button>
+
             <QuickAddModal 
                 isOpen={isAddModalOpen} 
                 onClose={() => setIsAddModalOpen(false)} 
