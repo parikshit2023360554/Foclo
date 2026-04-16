@@ -1,4 +1,4 @@
-// Version: 1.0.1 - Forced Cache Break
+// Deploy Version: 1.0.2 - Array Access Fix
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -53,12 +53,12 @@ export async function GET(request: Request) {
 
         // 3. Process each reminder
         for (const reminder of reminders) {
-            // Force array access with [0] and optional chaining
-            const taskData = Array.isArray(reminder.tasks) ? reminder.tasks[0] : null;
-            const examData = Array.isArray(reminder.exams) ? reminder.exams[0] : null;
+            // Treat them as arrays and take the first element
+            const taskObj = Array.isArray(reminder.tasks) ? reminder.tasks[0] : null;
+            const examObj = Array.isArray(reminder.exams) ? reminder.exams[0] : null;
 
-            const title = taskData?.title || examData?.subject || 'Unknown Task';
-            const date = taskData?.due_date || examData?.exam_date || 'Unknown Date';
+            const title = taskObj?.title || examObj?.subject || 'Unknown Task';
+            const date = taskObj?.due_date || examObj?.exam_date || 'Unknown Date';
             
             const message = `🔔 Reminder: You have an upcoming deadline for *${title}* on ${date}!`;
             
