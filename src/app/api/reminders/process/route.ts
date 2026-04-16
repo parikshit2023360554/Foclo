@@ -1,4 +1,4 @@
-// Deploy Version: 1.0.2 - Array Access Fix
+// BUILD FIX: Forced Array Indexing v1.0.3
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -53,12 +53,12 @@ export async function GET(request: Request) {
 
         // 3. Process each reminder
         for (const reminder of reminders) {
-            // Treat them as arrays and take the first element
-            const taskObj = Array.isArray(reminder.tasks) ? reminder.tasks[0] : null;
-            const examObj = Array.isArray(reminder.exams) ? reminder.exams[0] : null;
+            // Correctly access the first element [0] of the joined arrays
+            const taskData = (reminder.tasks && reminder.tasks.length > 0) ? reminder.tasks[0] : null;
+            const examData = (reminder.exams && reminder.exams.length > 0) ? reminder.exams[0] : null;
 
-            const title = taskObj?.title || examObj?.subject || 'Unknown Task';
-            const date = taskObj?.due_date || examObj?.exam_date || 'Unknown Date';
+            const title = taskData?.title || examData?.subject || 'Unknown Task';
+            const date = taskData?.due_date || examData?.exam_date || 'Unknown Date';
             
             const message = `🔔 Reminder: You have an upcoming deadline for *${title}* on ${date}!`;
             
