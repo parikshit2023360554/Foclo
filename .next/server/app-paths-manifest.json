@@ -1,9 +1,0 @@
-{
-  "/exams/page": "app/exams/page.js",
-  "/calendar/page": "app/calendar/page.js",
-  "/settings/page": "app/settings/page.js",
-  "/sign-up-login/page": "app/sign-up-login/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/tasks/page": "app/tasks/page.js",
-  "/reminders/page": "app/reminders/page.js"
-}

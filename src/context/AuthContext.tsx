@@ -66,6 +66,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return data;
     };
 
+    // Google Sign In
+    const signInWithGoogle = async () => {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                scopes: 'https://www.googleapis.com/auth/calendar',
+                redirectTo: `${window.location.origin}/auth/callback`,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                }
+            }
+        });
+        if (error) throw error;
+        return data;
+    };
+
     // Sign Out
     const signOut = async () => {
         const { error } = await supabase.auth.signOut();
@@ -81,6 +98,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 emailRedirectTo: `${window.location.origin}/auth/callback`
             }
         });
+        if (error) throw error;
+    };
+
+    // Reset password (magic link)
+    const resetPassword = async (email: string) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+    };
+
+    // Update password
+    const updatePassword = async (password: string) => {
+        const { error } = await supabase.auth.updateUser({ password });
         if (error) throw error;
     };
 
@@ -115,7 +146,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
+        resetPassword,
+        updatePassword,
         resendConfirmationEmail,
         getCurrentUser,
         isEmailVerified,

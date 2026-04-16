@@ -5,6 +5,10 @@ export async function POST(request: Request) {
     try {
         // Initialize Supabase admin/API client safely using the authorization header from the request
         const authHeader = request.headers.get('Authorization') || '';
+        const body = await request.json().catch(() => ({}));
+        const providerToken = body.providerToken;
+        
+        console.log('[API] Sync Request Received. Provider token exists:', !!providerToken);
         
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
@@ -64,7 +68,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ 
             success: true, 
             message: 'Successfully generated event payload and synced to Google Calendar.',
-            count: totalSynced
+            count: totalSynced,
+            debug: { providerTokenExists: !!providerToken }
         });
 
     } catch (error: any) {

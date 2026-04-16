@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
     Eye,
     EyeOff,
@@ -70,7 +71,7 @@ export default function AuthForm() {
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
     const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
-    const { signIn, signUp, resendConfirmationEmail } = useAuth();
+    const { signIn, signUp, resendConfirmationEmail, signInWithGoogle } = useAuth();
 
     const loginForm = useForm<LoginFields>({ defaultValues: { email: '', password: '', remember: false } });
     const signupForm = useForm<SignUpFields>({ defaultValues: { name: '', email: '', password: '', confirmPassword: '', terms: false } });
@@ -160,11 +161,14 @@ export default function AuthForm() {
 
     const handleGoogleAuth = async () => {
         setGoogleLoading(true);
-        // TODO: Connect to Supabase auth.signInWithOAuth({ provider: 'google', options: { scopes: 'https://www.googleapis.com/auth/calendar' } })
-        await new Promise((r) => setTimeout(r, 1800));
-        setGoogleLoading(false);
-        toast.success('Google sign-in successful', { description: 'Google Calendar sync enabled.' });
-        router.push('/dashboard');
+        try {
+            await signInWithGoogle();
+            // Note: OAuth redirects away, so subsequent code generally won't run execution.
+        } catch (error: any) {
+            console.error('Google Sign-In error:', error);
+            toast.error('Google Sign-In Failed', { description: error.message || 'An error occurred during Google sign in.' });
+            setGoogleLoading(false);
+        }
     };
 
     return (
@@ -346,9 +350,9 @@ export default function AuthForm() {
                                     />
                                     <span className="text-xs text-zinc-500">Remember me for 30 days</span>
                                 </label>
-                                <button type="button" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+                                <Link href="/forgot-password" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
                                     Forgot password?
-                                </button>
+                                </Link>
                             </div>
 
                             <button

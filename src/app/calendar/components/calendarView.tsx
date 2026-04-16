@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ChevronLeft,
     ChevronRight,
@@ -8,7 +8,9 @@ import {
     CheckSquare,
     Clock,
     X,
+    Loader2,
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 type EventType = 'task' | 'exam';
 type Priority = 'low' | 'medium' | 'high' | 'critical';
@@ -23,27 +25,7 @@ interface CalendarEvent {
     meta?: string;
 }
 
-// Mock events anchored to April 2026
-const EVENTS: CalendarEvent[] = [
-    { id: 'ev-001', title: 'Submit OS assignment #4', type: 'task', date: '2026-04-14', priority: 'critical', time: '11:30', meta: 'Due today' },
-    { id: 'ev-002', title: 'React hook practice set', type: 'task', date: '2026-04-14', priority: 'medium', time: '13:00' },
-    { id: 'ev-003', title: 'Algorithms Midterm', type: 'exam', date: '2026-04-16', priority: 'critical', time: '09:00', meta: 'Hall A-204' },
-    { id: 'ev-004', title: 'OS Quiz', type: 'exam', date: '2026-04-17', priority: 'high', time: '14:00', meta: 'Online — Moodle' },
-    { id: 'ev-005', title: 'Networks lab pre-report', type: 'task', date: '2026-04-17', priority: 'medium', time: '18:00' },
-    { id: 'ev-006', title: 'DB Systems Assignment', type: 'exam', date: '2026-04-19', priority: 'high', meta: 'Submit via Portal' },
-    { id: 'ev-007', title: 'Read Database Ch. 7–8', type: 'task', date: '2026-04-19', priority: 'high' },
-    { id: 'ev-008', title: 'Prepare SE slides', type: 'task', date: '2026-04-20', priority: 'high', time: '15:00' },
-    { id: 'ev-009', title: 'Networks Lab', type: 'exam', date: '2026-04-21', priority: 'medium', time: '10:00', meta: 'Lab 3, Block B' },
-    { id: 'ev-010', title: 'LeetCode graph problems', type: 'task', date: '2026-04-21', priority: 'medium' },
-    { id: 'ev-011', title: 'Implement REST API', type: 'task', date: '2026-04-25', priority: 'high' },
-    { id: 'ev-012', title: 'Linear Algebra problem set', type: 'task', date: '2026-04-28', priority: 'low' },
-    { id: 'ev-013', title: 'Read Clean Code Ch. 4–7', type: 'task', date: '2026-04-30', priority: 'low' },
-    { id: 'ev-014', title: 'Software Engineering Final', type: 'exam', date: '2026-05-02', priority: 'medium', time: '09:00', meta: 'Hall C-101' },
-    { id: 'ev-015', title: 'Linear Algebra Midterm', type: 'exam', date: '2026-05-08', priority: 'low', time: '14:00', meta: 'Hall B-302' },
-    { id: 'ev-016', title: 'Update GitHub README', type: 'task', date: '2026-05-01', priority: 'low' },
-    { id: 'ev-017', title: 'Plan study schedule', type: 'task', date: '2026-04-15', priority: 'low' },
-    { id: 'ev-018', title: 'Binary search tree C++', type: 'task', date: '2026-04-10', priority: 'critical' },
-];
+
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -71,10 +53,80 @@ const priorityDot: Record<Priority, string> = {
 };
 
 export default function CalendarView() {
-    const today = new Date(2026, 3, 14); // April 14, 2026
-    const [viewYear, setViewYear] = useState(2026);
-    const [viewMonth, setViewMonth] = useState(3); // April
-    const [selectedDate, setSelectedDate] = useState<string>('2026-04-14');
+    const defaultToday = new Date();
+    const [viewYear, setViewYear] = useState(defaultToday.getFullYear());
+    const [viewMonth, setViewMonth] = useState(defaultToday.getMonth());
+    const [selectedDate, setSelectedDate] = useState<string>(toDateKey(defaultToday.getFullYear(), defaultToday.getMonth(), defaultToday.getDate()));
+    const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { user, supabase } = useAuth();
+
+    useEffect(() => {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
+        const fetchEvents = async () => {
+            setLoading(true);
+            try {
+                const { data: tasksData, error: tasksError } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .neq('status', 'done');
+
+                const { data: examsData, error: examsError } = await supabase
+                    .from('exams')
+                    .select('*')
+                    .eq('user_id', user.id);
+
+                if (tasksError) throw tasksError;
+                if (examsError) throw examsError;
+
+                const formattedEvents: CalendarEvent[] = [];
+
+                (tasksData || []).forEach((t: any) => {
+                    if (t.due_date) {
+                        const d = new Date(t.due_date);
+                        formattedEvents.push({
+                            id: t.id,
+                            title: t.title,
+                            type: 'task',
+                            date: toDateKey(d.getFullYear(), d.getMonth(), d.getDate()),
+                            priority: t.priority,
+                            time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        });
+                    }
+                });
+
+                (examsData || []).forEach((e: any) => {
+                    if (e.exam_date) {
+                        const d = new Date(e.exam_date);
+                        formattedEvents.push({
+                            id: e.id,
+                            title: e.title,
+                            type: 'exam',
+                            date: toDateKey(d.getFullYear(), d.getMonth(), d.getDate()),
+                            priority: e.priority,
+                            time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            meta: e.subject
+                        });
+                    }
+                });
+
+                setEvents(formattedEvents);
+            } catch (error) {
+                console.error('Failed to fetch calendar events:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEvents();
+    }, [user, supabase]);
+
+    const today = new Date();
 
     const daysInMonth = getDaysInMonth(viewYear, viewMonth);
     const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
@@ -94,7 +146,7 @@ export default function CalendarView() {
         setSelectedDate(toDateKey(today.getFullYear(), today.getMonth(), today.getDate()));
     };
 
-    const eventsByDate = EVENTS.reduce<Record<string, CalendarEvent[]>>((acc, ev) => {
+    const eventsByDate = events.reduce<Record<string, CalendarEvent[]>>((acc, ev) => {
         acc[ev.date] = acc[ev.date] ? [...acc[ev.date], ev] : [ev];
         return acc;
     }, {});
@@ -122,7 +174,7 @@ export default function CalendarView() {
 
     const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
-    const upcomingEvents = EVENTS
+    const upcomingEvents = events
         .filter((e) => e.date >= todayKey)
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 8);
@@ -325,7 +377,13 @@ export default function CalendarView() {
                             <h3 className="text-sm font-semibold text-zinc-100">Upcoming Deadlines</h3>
                         </div>
                         <div className="p-3 space-y-1.5">
-                            {upcomingEvents.map((ev) => {
+                            {loading ? (
+                                <div className="py-8 flex justify-center">
+                                    <Loader2 className="animate-spin text-zinc-500" size={20} />
+                                </div>
+                            ) : upcomingEvents.length === 0 ? (
+                                <div className="text-center py-6 text-zinc-500 text-xs">No events scheduled</div>
+                            ) : upcomingEvents.map((ev) => {
                                 const daysAway = Math.ceil(
                                     (new Date(ev.date + 'T00:00:00').getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
                                 );

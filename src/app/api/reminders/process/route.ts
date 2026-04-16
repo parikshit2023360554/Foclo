@@ -27,8 +27,8 @@ export async function GET(request: Request) {
                 tasks ( title, due_date ),
                 exams ( subject, exam_date )
             `)
-            .eq('status', 'pending')
-            .lte('notify_at', now);
+            .eq('is_sent', false)
+            .lte('reminder_time', now);
 
         if (fetchError) throw fetchError;
         
@@ -40,23 +40,38 @@ export async function GET(request: Request) {
 
         // 3. Process each reminder
         for (const reminder of reminders) {
-            const isEmail = reminder.type === 'Email';
-            // Placeholder: Replace with Resend, Sendgrid, or Twilio
-            const message = `Reminder: You have an upcoming deadline for ${reminder.tasks?.title || reminder.exams?.subject}!`;
+            const title = reminder.tasks?.title || reminder.exams?.subject || 'Unknown Task';
+            const date = reminder.tasks?.due_date || reminder.exams?.exam_date || 'Unknown Date';
+            const message = `🔔 Reminder: You have an upcoming deadline for *${title}* on ${date}!`;
             
-            console.log(`[SYS] Dispatching ${reminder.type} to User ID ${reminder.user_id}: ${message}`);
+            console.log(`[SYS] Dispatching Telegram reminder: ${message}`);
             
-            // Simulating API call for Sending Email/SMS
-            await new Promise(r => setTimeout(r, 100));
+            try {
+                const tgRes = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: process.env.TELEGRAM_CHAT_ID,
+                        text: message,
+                        parse_mode: 'Markdown'
+                    })
+                });
 
-            processedIds.push(reminder.id);
+                if (tgRes.ok) {
+                    processedIds.push(reminder.id);
+                } else {
+                    console.error('[Telegram] Failed to send msg:', await tgRes.text());
+                }
+            } catch(e) {
+                console.error('[Telegram] Network error:', e);
+            }
         }
 
         // 4. Mark them as sent
         if (processedIds.length > 0) {
             const { error: updateError } = await supabase
                 .from('reminders')
-                .update({ status: 'sent' })
+                .update({ is_sent: true })
                 .in('id', processedIds);
 
             if (updateError) console.error('Failed to update reminder statuses:', updateError);

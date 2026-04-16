@@ -20,13 +20,17 @@ export default function DashboardHeader() {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token || '';
+            const providerToken = session?.provider_token || '';
+            
+            console.log('[Sync] Initiating sync. Provider token available:', !!providerToken);
 
             const res = await fetch('/api/calendar/sync', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                }
+                },
+                body: JSON.stringify({ providerToken })
             });
 
             if (!res.ok) {
@@ -40,6 +44,7 @@ export default function DashboardHeader() {
                 description: `${data.count} items updated · Last sync: just now`,
             });
         } catch (error: any) {
+            console.error('Google Calendar Sync Error:', error);
             toast.error('Sync failed', { description: error.message });
         } finally {
             setSyncing(false);
