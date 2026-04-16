@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+interface ReminderJoin {
+    id: string;
+    type: string;
+    user_id: string;
+    task_id: string | null;
+    exam_id: string | null;
+    tasks: { title: string; due_date: string }[] | null;
+    exams: { subject: string; exam_date: string }[] | null;
+}
+
 // This endpoint is designed to be triggered by a CRON job (e.g., Vercel Cron, AWS EventBridge, etc.)
 // It checks the 'reminders' table for pending notifications up to the current time,
 // dispatches them via Email or SMS, and marks them as 'sent'.
@@ -20,7 +30,7 @@ export async function GET(request: Request) {
         const now = new Date().toISOString();
 
         // 2. Fetch pending reminders whose time has come
-        const { data: reminders, error: fetchError } = await supabase
+        const { data, error: fetchError } = await supabase
             .from('reminders')
             .select(`
                 id, type, user_id, task_id, exam_id,
@@ -32,6 +42,8 @@ export async function GET(request: Request) {
 
         if (fetchError) throw fetchError;
         
+        const reminders = data as ReminderJoin[] | null;
+        
         if (!reminders || reminders.length === 0) {
             return NextResponse.json({ success: true, message: 'No pending reminders to process.' });
         }
@@ -40,8 +52,8 @@ export async function GET(request: Request) {
 
         // 3. Process each reminder
         for (const reminder of reminders) {
-            const title = reminder.tasks?.title || reminder.exams?.subject || 'Unknown Task';
-            const date = reminder.tasks?.due_date || reminder.exams?.exam_date || 'Unknown Date';
+            const title = reminder.tasks?.[0]?.title || reminder.exams?.[0]?.subject || 'Unknown Task';
+            const date = reminder.tasks?.[0]?.due_date || reminder.exams?.[0]?.exam_date || 'Unknown Date';
             const message = `🔔 Reminder: You have an upcoming deadline for *${title}* on ${date}!`;
             
             console.log(`[SYS] Dispatching Telegram reminder: ${message}`);
