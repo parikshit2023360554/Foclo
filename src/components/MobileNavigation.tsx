@@ -44,10 +44,10 @@ export default function MobileNavigation({ currentPath }: MobileNavProps) {
     { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { label: 'Calendar', href: '/calendar', icon: <CalendarDays size={20} /> },
     { label: 'Tasks', href: '/tasks', icon: <CheckSquare size={20} /> },
+    { label: 'Exams', href: '/exams', icon: <BookOpen size={20} /> },
   ];
 
   const drawerItems = [
-    { label: 'Exams', href: '/exams', icon: <BookOpen size={18} /> },
     { label: 'Reminders', href: '/reminders', icon: <Bell size={18} /> },
     { label: 'Settings', href: '/settings', icon: <Settings size={18} /> },
   ];
