@@ -35,16 +35,19 @@ async function sendTelegramMsg(message: string) {
 }
 
 export async function GET(request: Request) {
-    // 1. Verify cron secret to prevent unauthorized execution
+    // 1. Improved Authorization Check
     const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+    
+    if (process.env.CRON_SECRET && authHeader !== expectedAuth) {
+        console.error('[Cron] Unauthorized access attempt');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
         const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-            process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder_service_key'
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
         const nowUTC = new Date();
@@ -66,8 +69,10 @@ export async function GET(request: Request) {
         const startOfTodayISTUTC = new Date(`${p.year}-${p.month}-${p.day}T00:00:00+05:30`).toISOString();
         const endOfTodayISTUTC = new Date(`${p.year}-${p.month}-${p.day}T23:59:59+05:30`).toISOString();
 
-        // --- FEATURE 1: Daily Digest (7:00 AM - 7:15 AM) ---
-        if (currentHourIST === 7 && currentMinuteIST >= 0 && currentMinuteIST <= 15) {
+        // --- FEATURE 1: Daily Digest (Widened window: 7:00 AM - 8:00 AM IST) ---
+        // This ensures that even if the cron is delayed by 30+ minutes, it still triggers.
+        if (currentHourIST === 7) {
+            // Check if we already sent a digest today
             const { data: existingDigest } = await supabase
                 .from('reminders')
                 .select('id')
@@ -75,23 +80,36 @@ export async function GET(request: Request) {
                 .gte('created_at', startOfTodayISTUTC);
                 
             if (!existingDigest || existingDigest.length === 0) {
-                const { data: todayTasks } = await supabase
+                const { data: activeTasks } = await supabase
                     .from('tasks')
                     .select('*')
-                    .neq('status', 'done')
-                    .gte('due_date', startOfTodayISTUTC)
-                    .lte('due_date', endOfTodayISTUTC);
+                    .neq('status', 'done');
                     
-                if (todayTasks && todayTasks.length > 0) {
-                    let msg = `🌅 *Good Morning! Daily Digest*\nYou have ${todayTasks.length} task${todayTasks.length > 1 ? 's' : ''} due today:\n\n`;
-                    todayTasks.forEach((t: any) => {
-                        msg += `• _${t.title}_ [${t.priority.toUpperCase()}]\n`;
-                    });
+                if (activeTasks && activeTasks.length > 0) {
+                    const todayTasks = activeTasks.filter((t: any) => t.due_date >= startOfTodayISTUTC && t.due_date <= endOfTodayISTUTC);
+                    const otherTasks = activeTasks.filter((t: any) => t.due_date > endOfTodayISTUTC || t.due_date < startOfTodayISTUTC);
+
+                    let msg = `🌅 *Good Morning! Daily Digest*\n\n`;
                     
-                    const sent = await sendTelegramMsg(msg);
+                    if (todayTasks.length > 0) {
+                        msg += `*Tasks Due Today:*\n`;
+                        todayTasks.forEach((t: any) => {
+                            msg += `• _${t.title}_\n`;
+                        });
+                        msg += `\n`;
+                    }
+                    
+                    if (otherTasks.length > 0) {
+                        msg += `*Other Outstanding Tasks:*\n`;
+                        otherTasks.forEach((t: any) => {
+                            msg += `• _${t.title}_\n`;
+                        });
+                    }
+                    
+                    const sent = await sendTelegramMsg(msg.trim());
                     if (sent) {
                         await supabase.from('reminders').insert({
-                            user_id: todayTasks[0].user_id,
+                            user_id: activeTasks[0].user_id,
                             type: 'daily_digest',
                             is_sent: true,
                             reminder_time: nowUTC.toISOString()
@@ -187,6 +205,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ 
             success: true, 
+            istTime: `${p.hour}:${p.minute}`,
             message: `Processed logic successfully. Handled ${processedStandardCount} standard reminders.` 
         });
 

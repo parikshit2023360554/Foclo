@@ -11,8 +11,6 @@ import {
     CalendarDays,
     BookOpen,
     Bell,
-    Copy,
-    Check,
     Loader2,
     ArrowRight,
 } from 'lucide-react';
@@ -33,35 +31,12 @@ interface SignUpFields {
     terms: boolean;
 }
 
-const DEMO_CREDS = {
-    email: 'alex@lifetrackr.dev',
-    password: 'Track2026!',
-};
-
 const FEATURES = [
     { icon: <CheckCircle2 size={16} className="text-emerald-400" />, text: 'Daily task manager with progress tracking' },
     { icon: <BookOpen size={16} className="text-amber-400" />, text: 'Exam tracker with subject, type & priority' },
     { icon: <CalendarDays size={16} className="text-blue-400" />, text: 'Visual calendar with task & exam overlays' },
     { icon: <Bell size={16} className="text-purple-400" />, text: 'Smart reminders before every deadline' },
 ];
-
-function CopyButton({ text }: { text: string }) {
-    const [copied, setCopied] = useState(false);
-    const copy = async () => {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
-    return (
-        <button
-            onClick={copy}
-            className="text-zinc-600 hover:text-zinc-300 transition-colors"
-            title="Copy to clipboard"
-        >
-            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-        </button>
-    );
-}
 
 export default function AuthForm() {
     const router = useRouter();
@@ -75,11 +50,6 @@ export default function AuthForm() {
 
     const loginForm = useForm<LoginFields>({ defaultValues: { email: '', password: '', remember: false } });
     const signupForm = useForm<SignUpFields>({ defaultValues: { name: '', email: '', password: '', confirmPassword: '', terms: false } });
-
-    const autofill = () => {
-        loginForm.setValue('email', DEMO_CREDS.email);
-        loginForm.setValue('password', DEMO_CREDS.password);
-    };
 
     const onLogin = async (data: LoginFields) => {
         setLoading(true);
@@ -496,39 +466,6 @@ export default function AuthForm() {
                                 )}
                             </button>
                         </form>
-                    )}
-
-                    {/* Demo credentials box */}
-                    {tab === 'login' && (
-                        <div className="mt-5 p-4 bg-zinc-900 border border-zinc-700 rounded-xl animate-fadeIn">
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Demo Account</p>
-                                <button
-                                    onClick={autofill}
-                                    className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors flex items-center gap-1"
-                                >
-                                    <ArrowRight size={11} />
-                                    Use this account
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Email</p>
-                                        <p className="text-xs text-zinc-300 font-mono">{DEMO_CREDS.email}</p>
-                                    </div>
-                                    <CopyButton text={DEMO_CREDS.email} />
-                                </div>
-                                <div className="h-px bg-zinc-800" />
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[10px] text-zinc-600 uppercase tracking-wider mb-0.5">Password</p>
-                                        <p className="text-xs text-zinc-300 font-mono">{DEMO_CREDS.password}</p>
-                                    </div>
-                                    <CopyButton text={DEMO_CREDS.password} />
-                                </div>
-                            </div>
-                        </div>
                     )}
 
                     <p className="text-center text-xs text-zinc-600 mt-5">
