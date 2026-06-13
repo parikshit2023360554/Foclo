@@ -157,7 +157,7 @@ export default function AuthForm() {
                 <div className="relative">
                     <div className="flex items-center gap-3 mb-12">
                         <AppLogo size={40} />
-                        <span className="text-xl font-semibold text-zinc-100">LifeTrackr</span>
+                        <span className="text-xl font-semibold text-zinc-100">Foclo</span>
                     </div>
 
                     <h2 className="text-3xl xl:text-4xl font-bold text-zinc-100 leading-tight mb-4">
@@ -187,7 +187,7 @@ export default function AuthForm() {
                         </div>
                         <div>
                             <p className="text-sm text-zinc-300 font-medium">
-                                &ldquo;I used to miss assignments constantly. LifeTrackr fixed that in week one.&rdquo;
+                                &ldquo;I used to miss assignments constantly. Foclo fixed that in week one.&rdquo;
                             </p>
                             <p className="text-xs text-zinc-600 mt-1">— Alex Rivera, CS student</p>
                         </div>
@@ -200,7 +200,7 @@ export default function AuthForm() {
                 {/* Mobile logo */}
                 <div className="flex items-center gap-2 mb-8 lg:hidden">
                     <AppLogo size={36} />
-                    <span className="text-lg font-semibold text-zinc-100">LifeTrackr</span>
+                    <span className="text-lg font-semibold text-zinc-100">Foclo</span>
                 </div>
 
                 <div className="w-full max-w-sm xl:max-w-md">
@@ -471,7 +471,7 @@ export default function AuthForm() {
                     <p className="text-center text-xs text-zinc-600 mt-5">
                         {tab === 'login' ? (
                             <>
-                                New to LifeTrackr?{' '}
+                                New to Foclo?{' '}
                                 <button onClick={() => setTab('signup')} className="text-emerald-400 hover:text-emerald-300 transition-colors font-medium">
                                     Create a free account
                                 </button>

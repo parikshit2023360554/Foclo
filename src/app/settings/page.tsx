@@ -65,7 +65,7 @@ export default function SettingsPage() {
                         className="w-full flex items-center justify-center gap-2 p-4 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 rounded-xl text-red-400 text-sm font-semibold transition-all"
                     >
                         <LogOut size={18} />
-                        Sign Out from LifeTrackr
+                        Sign Out from Foclo
                     </button>
                 </div>
             </div>
