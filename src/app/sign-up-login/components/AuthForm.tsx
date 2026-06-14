@@ -155,9 +155,8 @@ export default function AuthForm() {
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2" />
 
                 <div className="relative">
-                    <div className="flex items-center gap-3 mb-12">
-                        <AppLogo size={40} />
-                        <span className="text-xl font-semibold text-zinc-100">Foclo</span>
+                    <div className="flex items-center m-0 p-0 mb-10 hover:scale-[1.03] transition-transform duration-300 ease-out origin-left">
+                        <AppLogo size={120} />
                     </div>
 
                     <h2 className="text-3xl xl:text-4xl font-bold text-zinc-100 leading-tight mb-4">
@@ -196,14 +195,28 @@ export default function AuthForm() {
             </div>
 
             {/* Right panel — form */}
-            <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-10 py-12">
+            <div className="flex-1 flex flex-col items-center justify-center px-6 sm:px-10 py-12 relative overflow-hidden bg-zinc-950">
+                {/* Background Grid Pattern (matching left side) */}
+                <div className="absolute inset-0 opacity-[0.02] pointer-events-none"
+                    style={{
+                        backgroundImage: 'linear-gradient(#10B981 1px, transparent 1px), linear-gradient(90deg, #10B981 1px, transparent 1px)',
+                        backgroundSize: '30px 30px',
+                    }}
+                />
+
+                {/* Aurora Glows - Stronger Opacity for high visibility */}
+                <div className="absolute top-[-10%] right-[-10%] w-[350px] h-[350px] bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[350px] h-[350px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute top-[40%] left-[20%] w-[250px] h-[250px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+
                 {/* Mobile logo */}
-                <div className="flex items-center gap-2 mb-8 lg:hidden">
-                    <AppLogo size={36} />
-                    <span className="text-lg font-semibold text-zinc-100">Foclo</span>
+                <div className="flex items-center m-0 p-0 mb-8 lg:hidden z-10">
+                    <AppLogo size={70} />
                 </div>
 
-                <div className="w-full max-w-sm xl:max-w-md">
+                {/* Glassmorphic Card Wrapper with Gradient Border */}
+                <div className="w-full max-w-sm xl:max-w-md p-[1px] bg-gradient-to-b from-emerald-500/40 via-zinc-800/50 to-blue-500/20 rounded-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] relative z-10 transition-all duration-300 hover:shadow-[0_0_70px_rgba(16,185,129,0.15)]">
+                    <div className="bg-zinc-950/80 backdrop-blur-xl p-8 rounded-[15px] w-full">
                     {/* Tabs */}
                     <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 mb-7">
                         {(['login', 'signup'] as const).map((t) => (
@@ -236,7 +249,7 @@ export default function AuthForm() {
                                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                             </svg>
                         )}
-                        {googleLoading ? 'Connecting…' : `Continue with Google${tab === 'signup' ? ' + Calendar Sync' : ''}`}
+                        {googleLoading ? 'Connecting…' : 'Continue with Google'}
                     </button>
 
                     <div className="flex items-center gap-3 mb-5">
@@ -485,6 +498,7 @@ export default function AuthForm() {
                             </>
                         )}
                     </p>
+                    </div>
                 </div>
             </div>
         </div>
