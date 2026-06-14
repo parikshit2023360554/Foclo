@@ -61,7 +61,7 @@ export default function Sidebar({ currentPath }: SidebarProps) {
       <div className={`flex items-center gap-2.5 px-3 py-4 border-b border-zinc-800 ${collapsed ? 'justify-center' : ''}`}>
         <AppLogo size={32} />
         {!collapsed && (
-          <span className="font-semibold text-zinc-100 text-base tracking-tight">LifeTrackr</span>
+          <span className="font-semibold text-zinc-100 text-base tracking-tight">Foclo</span>
         )}
       </div>
 

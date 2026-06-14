@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-    title: 'LifeTrackr — Never Miss a Task or Exam Again',
-    description: 'LifeTrackr helps students and developers manage daily tasks, track exam deadlines, and sync with Google Calendar — all in one focused dashboard.',
+    title: 'Foclo — Your All-in-One Life Organizer',
+    description: 'Foclo helps you manage daily tasks, track deadlines, and stay on top of everything — all in one focused dashboard.',
     icons: {
         icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
     },

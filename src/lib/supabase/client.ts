@@ -15,7 +15,16 @@ export const createClient = () => {
 
   supabaseInstance = createSupabaseClient(
     supabaseUrl || '',
-    supabaseAnonKey || ''
+    supabaseAnonKey || '',
+    {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      }
+    }
   );
   return supabaseInstance;
 };
